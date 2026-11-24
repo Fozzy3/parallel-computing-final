@@ -9,16 +9,23 @@ Los datos son de TransMilenio S.A., que los publica como datos abiertos desde el
 ```text
 raw/AAAA/MM/DD/positions_<AAAAMMDDTHHMMSSZ>.pb.gz   posiciones de los vehículos
 raw/AAAA/MM/DD/alerts_<AAAAMMDDTHHMMSSZ>.pb.gz      alertas del servicio
-archivar_tm.sh                                     script que descarga y guarda
-crontab_tm.txt                                     línea de cron que lo ejecuta
-fail.log                                           descargas fallidas, una por línea
+archivar_tm.sh                                     proceso que descarga y guarda
+subir_tm.sh                                        copia diaria a este repositorio
+crontab_tm.txt                                     líneas de cron que los ejecutan
+eventos.log                                        desde el 24 nov: fallas, feed congelado y vuelta, arranques
+fail.log                                           hasta el 24 nov: descargas fallidas, una por línea
 ```
 
 - Cada archivo es un mensaje `FeedMessage` de GTFS-Realtime (protobuf) comprimido con gzip. La hora del nombre es la de descarga, en UTC (Bogotá es UTC−5).
-- **Posiciones:** se consultan cada 20 s. Traen `trip_id`, `route_id`, `stop_id`, `current_stop_sequence`, etiqueta y placa del vehículo, posición y hora del reporte. No traen velocidad ni ocupación. En hora punta hay unos 7.000 vehículos por captura.
+- **Posiciones:** se consultan cada 10 s (cada 20 s hasta el 24 de noviembre a las 17:22 UTC). Traen `trip_id`, `route_id`, `stop_id`, `current_stop_sequence`, etiqueta y placa del vehículo, posición y hora del reporte. No traen velocidad ni ocupación. En hora punta hay unos 7.000 vehículos por captura.
 - **Alertas:** se consultan cada minuto.
-- Solo se guarda una captura cuando el archivo cambió desde la anterior. El feed se refresca cada 26 s aproximadamente, así que el máximo es de unas 3.300 capturas de posiciones por día.
-- No se archivan los `tripupdates.pb` (7,6 MB por captura) ni el GTFS estático diario (`GTFS.zip`).
+- Solo se guarda una captura cuando el archivo cambió desde la anterior. El feed se refresca cada 30 s aproximadamente, a veces en menos de 20 s; por eso desde el 24 de noviembre se consulta cada 10 s.
+- **GTFS estático:** desde el 24 de noviembre se guarda `GTFS_<UTC>.zip` cada vez que `manifest.json` anuncia una versión nueva (una vez al día). Pesa unos 118 MB y GitHub no acepta archivos de más de 100 MB, así que queda solo en el servidor que archiva.
+- No se archivan los `tripupdates.pb` (7,6 MB por captura).
+
+## Cómo se captura
+
+Un solo proceso (`archivar_tm.sh`) corre en un servidor de la Universidad Distrital. Cron intenta arrancarlo cada minuto y `flock` deja una sola copia, así que si se cae o el servidor se reinicia vuelve en menos de un minuto. Cada descarga se reintenta dos veces, y cada archivo se escribe primero como `.part` y luego se renombra, así que un corte no deja archivos a medias. Cuando las posiciones no cambian en 5 minutos, `eventos.log` registra que el feed se congeló y, después, cuánto duró. Cada día a las 00:30 de Bogotá, `subir_tm.sh` sube a este repositorio lo nuevo.
 
 ## Cómo leerlo
 

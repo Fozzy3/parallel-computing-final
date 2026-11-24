@@ -1,3 +1,7 @@
-.lock
-.*.last
-.*.new
+# runtime state of the archiver
+.*
+!.gitignore
+estado.txt
+*.part
+# static GTFS (~118 MB) stays on the VM: GitHub rejects files over 100 MB
+GTFS_*.zip
