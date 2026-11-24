@@ -1,0 +1,1 @@
+* * * * * flock -n $HOME/bog/.lock sh -c '$HOME/bog/archivar_tm.sh alerts; $HOME/bog/archivar_tm.sh positions; sleep 20; $HOME/bog/archivar_tm.sh positions; sleep 20; $HOME/bog/archivar_tm.sh positions' # tm-archive
